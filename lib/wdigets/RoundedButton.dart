@@ -5,8 +5,9 @@ class RoundedButton extends StatelessWidget {
   final VoidCallback onpressed;
   final Color color;
   final String text;
+  Widget child;
 
-  RoundedButton({@required this.color,@required this.onpressed,@required this.text});
+  RoundedButton({@required this.color,@required this.onpressed,@required this.text,this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +24,9 @@ class RoundedButton extends StatelessWidget {
           backgroundColor: MaterialStateProperty.all(color)
           ),
 
-          child: Text(
+          child: child ??=Text(
             text,
-          ),
+          ) ,
         ),
       ),
     );

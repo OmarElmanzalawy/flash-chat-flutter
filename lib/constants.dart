@@ -22,6 +22,7 @@ const kTextFieldDecoration = InputDecoration(
                 hintStyle: TextStyle(
                   color: Colors.black38,
                 ),
+                
                 hintText: 'Enter Your text here',
                 contentPadding:
                     EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
