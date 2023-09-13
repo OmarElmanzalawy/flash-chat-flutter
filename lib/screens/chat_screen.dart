@@ -13,6 +13,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   final Firestore _firestore = Firestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController textEditingController = TextEditingController();
   FirebaseUser currentUser;
   String messagetxt;
 
@@ -27,21 +28,12 @@ class _ChatScreenState extends State<ChatScreen> {
       final user = await _auth.currentUser();
       if(user!= null){
         currentUser = user;
-        print(currentUser.email);
       }
     } catch (e) {
       print('Error occured while getting current user');
     }
   }
-
-  void messageStream()async{
-    await for(var snapshot in _firestore.collection('messages').snapshots()){
-      for(var message in snapshot.documents){
-        print(message.data);
-      }
-    }
-  }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,9 +43,8 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
               icon: Icon(Icons.close),
               onPressed: () {
-               messageStream();
-               /*_auth.signOut();
-               Navigator.pop(context);*/
+               _auth.signOut();
+               Navigator.pop(context);
               }),
         ],
         title: Text('⚡️Chat'),
@@ -64,6 +55,31 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('messages').snapshots(),
+              builder: (context,  snapshot){
+                List<Widget> messageWidgets = [];
+                if(!snapshot.hasData){
+                  return Center(child: CircularProgressIndicator(value: null));
+                }
+                else if(snapshot.hasData){
+                  final messages = snapshot.data.documents.reversed;
+                  for(var message in messages){
+                    final text = message.data['text'];
+                    final sender = message.data['sender'];
+                    final messageWidget = 
+                    messageWidgets.add(MessageBubble(sender: sender,text: text,isMe: sender == currentUser.email,));
+                  }
+                }
+                return Expanded(
+                  child: ListView(
+                    reverse: true,
+                    padding: EdgeInsets.symmetric(horizontal: 10,vertical: 20),
+                    children: messageWidgets
+                    ),
+                );
+              }
+            ),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
@@ -71,6 +87,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: <Widget>[
                   Expanded(
                     child: TextField(
+                      controller: textEditingController,
                       onChanged: (value) {
                         messagetxt = value;
                       },
@@ -84,6 +101,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           'sender':currentUser.email,
                           'text': messagetxt,
                         });
+                        textEditingController.clear();
                     },
                     child: Text(
                       'Send',
@@ -99,3 +117,47 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
+  class MessageBubble extends StatelessWidget {
+    
+    MessageBubble({this.sender,this.text,this.isMe});
+    
+    final String sender;
+    final String text;
+    final bool isMe;
+
+    @override
+    Widget build(BuildContext context) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12.0),
+        child: Column(
+          crossAxisAlignment:isMe ? CrossAxisAlignment.end: CrossAxisAlignment.start,
+          children: [
+            Text(
+              sender,
+              style: TextStyle(fontSize: 12),
+              ),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: isMe ? BorderRadius.only(bottomLeft: Radius.circular(30),topLeft: Radius.circular(30),bottomRight: Radius.circular(30)) :
+                BorderRadius.only(bottomLeft: Radius.circular(30),topRight: Radius.circular(30),bottomRight: Radius.circular(30))
+              ),
+              color: isMe ? Colors.lightBlueAccent : Colors.grey,
+              elevation: 20,
+              
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Text(
+                  '$text',
+                  style: kmessageTextStyle,                      
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
