@@ -11,11 +11,11 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
 
-  final Firestore _firestore = Firestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController textEditingController = TextEditingController();
-  FirebaseUser currentUser;
-  String messagetxt;
+  late User currentUser;
+  String? messagetxt;
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void getCurrentUser()async{
     try {
-      final user = await _auth.currentUser();
+      final user = await _auth.currentUser;
       if(user!= null){
         currentUser = user;
       }
@@ -62,11 +62,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 if(!snapshot.hasData){
                   return Center(child: CircularProgressIndicator(value: null));
                 }
+                //TODO: FIX THIS SHIT
                 else if(snapshot.hasData){
-                  final messages = snapshot.data.documents.reversed;
+                  final messages = snapshot.data!.docs.reversed;
                   for(var message in messages){
-                    final text = message.data['text'];
-                    final sender = message.data['sender'];
+
+                    final mappedText = message.data() as Map<String,dynamic>;
+                    final text = mappedText['text'];
+                    final mappedSender = message.data() as Map<String,dynamic>;
+                    final sender = mappedSender['sender'];
                     final messageWidget = 
                     messageWidgets.add(MessageBubble(sender: sender,text: text,isMe: sender == currentUser.email,));
                   }
@@ -122,27 +126,27 @@ class _ChatScreenState extends State<ChatScreen> {
     
     MessageBubble({this.sender,this.text,this.isMe});
     
-    final String sender;
-    final String text;
-    final bool isMe;
+    final String? sender;
+    final String? text;
+    final bool? isMe;
 
     @override
     Widget build(BuildContext context) {
       return Padding(
         padding: const EdgeInsets.only(top: 12.0),
         child: Column(
-          crossAxisAlignment:isMe ? CrossAxisAlignment.end: CrossAxisAlignment.start,
+          crossAxisAlignment:isMe! ? CrossAxisAlignment.end: CrossAxisAlignment.start,
           children: [
             Text(
-              sender,
+              sender!,
               style: TextStyle(fontSize: 12),
               ),
             Card(
               shape: RoundedRectangleBorder(
-                borderRadius: isMe ? BorderRadius.only(bottomLeft: Radius.circular(30),topLeft: Radius.circular(30),bottomRight: Radius.circular(30)) :
+                borderRadius: isMe! ? BorderRadius.only(bottomLeft: Radius.circular(30),topLeft: Radius.circular(30),bottomRight: Radius.circular(30)) :
                 BorderRadius.only(bottomLeft: Radius.circular(30),topRight: Radius.circular(30),bottomRight: Radius.circular(30))
               ),
-              color: isMe ? Colors.lightBlueAccent : Colors.grey,
+              color: isMe! ? Colors.lightBlueAccent : Colors.grey,
               elevation: 20,
               
               child: Padding(
